@@ -1,7 +1,7 @@
 # MDWOCAO.js 集成指南
 
-**MDWOCAO.js** 是一个超轻量级、单文件的 Markdown 解析器。
-MD，WOCAO！这玩意用起来真方便！
+**MDWOCAO.js** 是一个超轻量级、单文件的 Markdown 解析器。<br>
+MD，WOCAO！这玩意用起来真方便！<br>
 它支持 **GitHub 风格 Alert**、**KaTeX 数学公式**、**Emoji**、**代码高亮**、**任务列表** 以及 **自定义属性**。无需复杂的构建流程，引入即用。
 
 ## 1. 快速开始 (Vanilla JS)
