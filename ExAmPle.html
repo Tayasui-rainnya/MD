@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDWOCAO.js Demo</title>
+    
+    <!-- 1. KaTeX Dependency -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <!-- 2. MDWOCAO Core -->
+    <script src="mdwocao.js"></script>
+
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; overflow: hidden; }
+        .container { display: flex; height: 100vh; }
+        
+        /* Pane Layout */
+        .editor-pane, .preview-pane {
+            flex: 1;
+            height: 100%;
+            overflow-y: hidden;
+            box-sizing: border-box;
+        }
+
+        .editor-pane {
+            border-right: 1px solid #e1e4e8;
+            background-color: #f6f8fa;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 10px 20px;
+            background: #fff;
+            border-bottom: 1px solid #e1e4e8;
+            font-weight: bold;
+            color: #24292f;
+            flex-shrink: 0;
+        }
+
+        textarea {
+            flex: 1;
+            width: 100%;
+            border: none;
+            padding: 20px;
+            resize: none;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+            background: transparent;
+            color: #24292f;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .preview-pane {
+            padding: 20px 40px;
+            background-color: #ffffff;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="editor-pane" id="editorWrapper">
+        <div class="header">Input (Markdown)</div>
+        <textarea id="editor" spellcheck="false">
+# MDWOCAO.js V24 Features
+
+[TOC]
+
+---
+
+## 1. Custom Attributes (HEX Color Fix)
+Test for HEX colors in styles. The text below should be red (#ff0000) and blue (#0000ff).
+
+### Red Title {.red style="color:#ff0000;"}
+
+This paragraph has a blue background using HEX codes. {style="background-color:#e6f7ff; color:#0050b3; padding:10px; border:1px solid #91d5ff;"}
+
+## 2. Math Formula (KaTeX)
+$$
+\frac{1}{\pi} = \frac{2\sqrt{2}}{9801} \sum_{k=0}^\infty \frac{(4k)!(1103+26390k)}{(k!)^4 396^{4k}}
+$$
+
+## 3. GitHub Alerts & Emojis
+> [!NOTE] This is a note with an emoji :smile:
+> [!TIP] Pro tip: Use **single-line** syntax!
+
+## 4. Code Guarding
+Code blocks are guarded. Math syntax `$x$` and Emojis `:smile:` inside code will **NOT** be rendered.
+
+```javascript {linenos=on hl_lines=[2]}
+function test() {
+    var $price = 100; // This $ stays as code
+    var mood = ":smile:"; // This stays as text
+    return $price;
+}
+```
+
+## 5. Tables & Alignment
+
+| Left | Center | Right |
+| :--- | :---: | ---: |
+| Text | $f(x)$ | :heart: |
+| 100 | 200 | 300 |
+
+## 6. Keyboard Keys
+To save, press <kbd>Ctrl</kbd> + <kbd>S</kbd>.
+
+## 7. Task List
+- [x] Fix HEX Color Parsing
+- [x] Fix Scroll Sync
+- [ ] Write Documentation
+        </textarea>
+    </div>
+    <div class="preview-pane" id="preview"></div>
+</div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const editorWrapper = document.getElementById('editorWrapper');
+
+    function render() {
+        const text = editor.value;
+        preview.innerHTML = MDWOCAO.parse(text);
+    }
+
+    render();
+    editor.addEventListener('input', render);
+
+    let activeSide = null;
+
+    editorWrapper.addEventListener('mouseenter', () => { activeSide = 'editor'; });
+    preview.addEventListener('mouseenter', () => { activeSide = 'preview'; });
+
+    editor.addEventListener('scroll', () => {
+        if (activeSide === 'editor') {
+            const percentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
+            const targetY = (preview.scrollHeight - preview.clientHeight) * (percentage || 0);
+            preview.scrollTop = targetY;
+        }
+    });
+
+    preview.addEventListener('scroll', () => {
+        if (activeSide === 'preview') {
+            const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight);
+            const targetY = (editor.scrollHeight - editor.clientHeight) * (percentage || 0);
+            editor.scrollTop = targetY;
+        }
+    });
+</script>
+</body>
+</html>
