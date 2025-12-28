@@ -1,6 +1,7 @@
 /**
- * MDWOCAO.js V23
- * MD！WOCAO！这玩意用起来真方便！
+ * MDWOCAO.js V24
+ * MD!WOCAO!这玩意真好用！
+ * Fix: Custom Attributes Parsing Order (Hex color support)
  */
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -13,7 +14,7 @@
 }(this, function () {
     'use strict';
 
-    // 1. Emoji Map (Common GitHub/Slack style)
+    // Emoji Map
     var EMOJI_MAP = {
         "smile": "😄", "smiley": "😃", "grinning": "😀", "blush": "😊", "wink": "😉", "heart_eyes": "😍",
         "kissing_heart": "😘", "stuck_out_tongue": "😛", "sleeping": "😴", "worried": "😟", "sweat_smile": "😅",
@@ -25,7 +26,7 @@
         "100": "💯", "question": "❓", "exclamation": "❗"
     };
 
-    // Holy Shit Styles?!!
+    // Holy Shit Styles?
     var styles = 
         ".md-content{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6;color:#24292f}" +
         ".md-content h1,.md-content h2,.md-content h3,.md-content h4,.md-content h5,.md-content h6{border-bottom:1px solid #eaecef;padding-bottom:.3em;margin-top:24px;margin-bottom:16px;font-weight:600;line-height:1.25}" +
@@ -114,22 +115,50 @@
         return text.replace(/[&<>"']/g, function (m) { return map[m]; });
     }
     
+    // --- V24 FIX: Parse Attributes (Fixed Order) ---
     function parseAttributes(text) {
-        var match = text.match(/^(.*)\s*\{((?:#[^\s}]+|\.[^\s}]+|[\w-]+=['"][^'"]+['"]|\s+)+)\}\s*$/);
-        if (!match) { return { text: text, attrStr: '', id: null }; }
+        // Regex to match {...} at the end of the string
+        var match = text.match(/^(.*)\s*\{([^}]+)\}\s*$/);
+        
+        if (!match) {
+            return { text: text, attrStr: '', id: null };
+        }
+
         var content = match[1];
         var attrBlock = match[2];
         var id = null;
         var classes = [];
         var otherAttrs = [];
-        attrBlock = attrBlock.replace(/#([a-zA-Z0-9_-]+)/g, function(m, v) { id = v; return ''; });
-        attrBlock = attrBlock.replace(/\.([a-zA-Z0-9_-]+)/g, function(m, v) { classes.push(v); return ''; });
-        attrBlock.replace(/([a-zA-Z0-9_-]+)=(['"])((?:(?!\2).)*)\2/g, function(m, key, quote, val) { otherAttrs.push(key + '="' + val + '"'); return ''; });
+
+        // 1. EXTRACT ATTRIBUTES FIRST (key="value") to protect hex colors in styles
+        // Matches key="val" or key='val'. Handles escaped quotes poorly but fine for CSS.
+        attrBlock = attrBlock.replace(/([a-zA-Z0-9_-]+)=(['"])((?:(?!\2).)*)\2/g, function(m, key, quote, val) {
+            otherAttrs.push(key + '="' + val + '"');
+            return ''; // Remove matched attribute from block
+        });
+
+        // 2. Extract IDs: #my-id (from remaining string)
+        attrBlock = attrBlock.replace(/#([a-zA-Z0-9_-]+)/g, function(m, v) {
+            id = v; 
+            return '';
+        });
+
+        // 3. Extract Classes: .my-class (from remaining string)
+        attrBlock = attrBlock.replace(/\.([a-zA-Z0-9_-]+)/g, function(m, v) {
+            classes.push(v); 
+            return '';
+        });
+
         var finalParts = [];
         if (id) finalParts.push('id="' + id + '"');
         if (classes.length) finalParts.push('class="' + classes.join(' ') + '"');
         if (otherAttrs.length) finalParts.push(otherAttrs.join(' '));
-        return { text: content, attrStr: finalParts.length ? ' ' + finalParts.join(' ') : '', id: id };
+
+        return { 
+            text: content, 
+            attrStr: finalParts.length ? ' ' + finalParts.join(' ') : '',
+            id: id
+        };
     }
 
     MDWOCAO.prototype.generateId = function(text) {
@@ -217,7 +246,6 @@
     function parseInline(text) {
         if (!text) return '';
         
-        // Emoji Replacement (V23)
         text = text.replace(/:([a-z0-9_\-\+]+):/g, function(match, name) {
             return EMOJI_MAP[name] || match;
         });
