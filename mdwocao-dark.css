@@ -1,0 +1,220 @@
+/* 
+ * MDWOCAO Dark Mode Support 
+ * Inspiration: GitHub Dark
+ * Usage: Load this file AFTER mdwocao.css
+ */
+
+/* 定义深色变量的 Mixin */
+:root {
+	--md-dark-bg: #0d1117;
+	--md-dark-text: #c9d1d9;
+	--md-dark-border: #30363d;
+	--md-dark-link: #58a6ff;
+
+	/* 代码块深色 */
+	--md-dark-code-bg: #161b22;
+	--md-dark-code-text: #e6edf3;
+	--md-dark-inline-code-bg: rgba(110, 118, 129, 0.4);
+
+	/* 引用与表格深色 */
+	--md-dark-blockquote-color: #8b949e;
+	--md-dark-table-stripe: #161b22;
+
+	/* 提示块 (Alerts) Deep Dark */
+	/* Note: Blue */
+	--md-dark-note-bg: rgba(56, 139, 253, 0.1);
+	--md-dark-note-border: rgba(56, 139, 253, 0.4);
+	--md-dark-note-text: #58a6ff;
+	/* Tip: Green */
+	--md-dark-tip-bg: rgba(46, 160, 67, 0.1);
+	--md-dark-tip-border: rgba(46, 160, 67, 0.4);
+	--md-dark-tip-text: #3fb950;
+	/* Warn: Yellow/Gold */
+	--md-dark-warn-bg: rgba(187, 128, 9, 0.1);
+	--md-dark-warn-border: rgba(187, 128, 9, 0.4);
+	--md-dark-warn-text: #d29922;
+	/* Imp: Purple */
+	--md-dark-imp-bg: rgba(137, 87, 229, 0.1);
+	--md-dark-imp-border: rgba(137, 87, 229, 0.4);
+	--md-dark-imp-text: #bc8cff;
+	/* Caution: Red */
+	--md-dark-cau-bg: rgba(248, 81, 73, 0.1);
+	--md-dark-cau-border: rgba(248, 81, 73, 0.4);
+	--md-dark-cau-text: #f85149;
+}
+
+/* 
+ * 激活策略：
+ * 1. 媒体查询 (系统偏好)
+ * 2. .dark-mode 类名 (手动切换)
+ * 3. [data-theme="dark"] 属性 (手动切换)
+ */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--md-bg: var(--md-dark-bg);
+		--md-text: var(--md-dark-text);
+		--md-border: var(--md-dark-border);
+		--md-link: var(--md-dark-link);
+		--md-code-bg: var(--md-dark-code-bg);
+		--md-code-text: var(--md-dark-code-text);
+		--md-inline-code-bg: var(--md-dark-inline-code-bg);
+		--md-blockquote-color: var(--md-dark-blockquote-color);
+		--md-table-stripe: var(--md-dark-table-stripe);
+
+		--md-note-bg: var(--md-dark-note-bg);
+		--md-note-border: var(--md-dark-note-border);
+		--md-note-text: var(--md-dark-note-text);
+		--md-tip-bg: var(--md-dark-tip-bg);
+		--md-tip-border: var(--md-dark-tip-border);
+		--md-tip-text: var(--md-dark-tip-text);
+		--md-warn-bg: var(--md-dark-warn-bg);
+		--md-warn-border: var(--md-dark-warn-border);
+		--md-warn-text: var(--md-dark-warn-text);
+		--md-imp-bg: var(--md-dark-imp-bg);
+		--md-imp-border: var(--md-dark-imp-border);
+		--md-imp-text: var(--md-dark-imp-text);
+		--md-cau-bg: var(--md-dark-cau-bg);
+		--md-cau-border: var(--md-dark-cau-border);
+		--md-cau-text: var(--md-dark-cau-text);
+	}
+}
+
+:root[data-theme="dark"],
+body.dark-mode,
+html.dark-mode {
+	--md-bg: var(--md-dark-bg);
+	--md-text: var(--md-dark-text);
+	--md-border: var(--md-dark-border);
+	--md-link: var(--md-dark-link);
+	--md-code-bg: var(--md-dark-code-bg);
+	--md-code-text: var(--md-dark-code-text);
+	--md-inline-code-bg: var(--md-dark-inline-code-bg);
+	--md-blockquote-color: var(--md-dark-blockquote-color);
+	--md-table-stripe: var(--md-dark-table-stripe);
+
+	--md-note-bg: var(--md-dark-note-bg);
+	--md-note-border: var(--md-dark-note-border);
+	--md-note-text: var(--md-dark-note-text);
+	--md-tip-bg: var(--md-dark-tip-bg);
+	--md-tip-border: var(--md-dark-tip-border);
+	--md-tip-text: var(--md-dark-tip-text);
+	--md-warn-bg: var(--md-dark-warn-bg);
+	--md-warn-border: var(--md-dark-warn-border);
+	--md-warn-text: var(--md-dark-warn-text);
+	--md-imp-bg: var(--md-dark-imp-bg);
+	--md-imp-border: var(--md-dark-imp-border);
+	--md-imp-text: var(--md-dark-imp-text);
+	--md-cau-bg: var(--md-dark-cau-bg);
+	--md-cau-border: var(--md-dark-cau-border);
+	--md-cau-text: var(--md-dark-cau-text);
+}
+
+/* 
+ * 强制组件深色修正 
+ * 作用于深色模式生效时
+ */
+@media (prefers-color-scheme: dark) {
+	.md-content {
+		color-scheme: dark; /* 修正浏览器原生控件(滚动条等)颜色 */
+	}
+	/* 修正 JS 生成的内联样式：代码块右上角的语言标签 */
+	.md-content .md-code-block-wrapper .md-code-lang-tag {
+		color: var(--md-text) !important;
+		background: var(--md-border) !important;
+		opacity: 0.8;
+	}
+}
+
+:root[data-theme="dark"] .md-content,
+body.dark-mode .md-content,
+html.dark-mode .md-content {
+	color-scheme: dark;
+}
+
+:root[data-theme="dark"] .md-content .md-code-block-wrapper .md-code-lang-tag,
+body.dark-mode .md-content .md-code-block-wrapper .md-code-lang-tag,
+html.dark-mode .md-content .md-code-block-wrapper .md-code-lang-tag {
+	color: var(--md-text) !important;
+	background: var(--md-border) !important;
+	opacity: 0.8;
+}
+
+/* 
+ * 通用深色模式细节修正 
+ * 无论通过何种方式激活，以下样式确保细节完美
+ */
+
+/* 1. 复选框适配 */
+@media (prefers-color-scheme: dark) {
+	.md-content input[type="checkbox"] {
+		accent-color: var(--md-link);
+	}
+}
+:root[data-theme="dark"] .md-content input[type="checkbox"],
+body.dark-mode .md-content input[type="checkbox"] {
+	accent-color: var(--md-link);
+}
+
+/* 2. 高亮标记适配 (<mark> ==text==) */
+@media (prefers-color-scheme: dark) {
+	.md-content mark {
+		background-color: rgba(187, 128, 9, 0.4);
+		color: var(--md-text);
+		padding: 0 2px;
+		border-radius: 2px;
+	}
+}
+:root[data-theme="dark"] .md-content mark,
+body.dark-mode .md-content mark {
+	background-color: rgba(187, 128, 9, 0.4);
+	color: var(--md-text);
+	padding: 0 2px;
+	border-radius: 2px;
+}
+
+/* 3. 图片亮度调节 (防止在深色背景下过于刺眼) */
+@media (prefers-color-scheme: dark) {
+	.md-content img {
+		opacity: 0.9;
+	}
+}
+:root[data-theme="dark"] .md-content img,
+body.dark-mode .md-content img {
+	opacity: 0.9;
+}
+
+/* 4. 滚动条美化 (Webkit) */
+.md-content ::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+.md-content ::-webkit-scrollbar-thumb {
+	background: #8b949e;
+	border-radius: 5px;
+	border: 2px solid transparent;
+	background-clip: content-box;
+}
+
+.md-content ::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+	.md-content ::-webkit-scrollbar-thumb {
+		background: #50565d;
+	}
+}
+
+:root[data-theme="dark"] .md-content ::-webkit-scrollbar-thumb,
+body.dark-mode .md-content ::-webkit-scrollbar-thumb {
+	background: #50565d;
+}
+
+/* 5. 脚注链接修正 */
+@media (prefers-color-scheme: dark) {
+	.md-content .md-footnote-ref,
+	.md-content .md-footnote-backref {
+		color: var(--md-link);
+	}
+}
