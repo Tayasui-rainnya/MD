@@ -1,6 +1,6 @@
 # MDWOCAO.js 使用指南
 
-**MDWOCAO.js** 是一个轻量级、高性能、单文件的 Markdown 解析库。它专为现代 Web 开发设计，支持 ES5 环境，且内置了基于 Web Worker 的异步解析能力，确保在处理大段文本时不会阻塞 UI 线程。
+**MDWOCAO.js** 是一个轻量级的 Markdown 解析库。它专为 Web 开发设计，支持 ES5 环境，且内置了基于 Web Worker 的异步解析能力，确保在处理大段文本时不会阻塞 UI 线程。
 
 ## 🌟 核心特性
 
