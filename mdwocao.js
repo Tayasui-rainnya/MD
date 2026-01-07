@@ -1,14 +1,12 @@
 /**
- * MDWOCAO.js V36 (Clean Start - No Worker)
+ * MDWOCAO.js V37 (Async Worker Edition)
  * MD!WOCAO!这玩意真好用！
  * 
  * Features:
- * - Scrollbar Fix (overflow-x auto wrapper).
- * - Indentation Fix (white-space: pre).
- * - Language Label (Absolute positioning).
- * - Line Numbers styling (Right aligned, padding).
- * - Theme Agnostic (CSS controls colors).
- * - Removed Worker Support.
+ * - ES5 Compatible.
+ * - Single File (Inline Web Worker using Blob).
+ * - Async Parsing to prevent UI blocking.
+ * - Scrollbar Fix, Indentation Fix, Language Labels.
  */
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
@@ -53,6 +51,11 @@
             def: /^:\s+(.*)/,
             toc: /^\[TOC\]\s*$/i
         };
+
+        // Async Worker State
+        this.worker = null;
+        this.msgId = 0;
+        this.callbacks = {};
     }
 
     // --- Static Utility: Debounce ---
@@ -70,6 +73,8 @@
             if (callNow) func.apply(context, args);
         };
     };
+
+    // --- Core Parsing Helpers ---
 
     function escapeHtml(text) {
         var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
@@ -287,6 +292,8 @@
         });
     }
 
+    // --- Sync Parsing ---
+
     MDWOCAO.prototype.parse = function (markdown, options) {
         if (!markdown) return '';
 
@@ -353,18 +360,15 @@
             var hasLinenos = state.codeParams.linenos || options.defaultLinenos;
             var hasHl = state.codeParams.hlLines && state.codeParams.hlLines.length > 0;
             
-            // Generate visual Language Label (top-right)
             var langLabel = '';
             if (state.codeLang) {
                 langLabel = '<div class="md-code-lang-tag" style="position:absolute; top:0; right:0; padding:2px 8px; font-size:12px; color:#666; background:rgba(0,0,0,0.05); border-bottom-left-radius:4px; user-select:none; pointer-events:none;">' + escapeHtml(state.codeLang) + '</div>';
             }
 
-            // Wrapper for consistent positioning
             output.push('<div class="md-code-block-wrapper" style="position:relative;">');
             output.push(langLabel);
 
             if (hasLinenos || hasHl) {
-                // [FIX] Added a wrapper div with overflow-x: auto to enable scrolling for the table
                 output.push('<div style="overflow-x: auto;">');
                 output.push('<table class="md-code-table"><tbody>');
                 for (var j = 0; j < state.codeBuffer.length; j++) {
@@ -382,7 +386,7 @@
                     output.push('</tr>');
                 }
                 output.push('</tbody></table>');
-                output.push('</div>'); // Close scroll wrapper
+                output.push('</div>'); 
             } else {
                 var rawCode = state.codeBuffer.join('\n');
                 var safeCode = escapeHtml(self.unmaskEscapes(rawCode));
@@ -390,7 +394,7 @@
                 output.push('<pre><code' + langClass + '>' + safeCode + '</code></pre>');
             }
             
-            output.push('</div>'); // Close main wrapper
+            output.push('</div>');
             
             state.inCodeBlock = false; state.codeBuffer = []; state.codeParams = {}; state.codeLang = ''; state.codeFenceLen = 0;
         }
@@ -399,7 +403,6 @@
             var line = lines[i];
             var trimmed = line.trim();
 
-            // 1. Code Blocks
             var codeStartMatch = !state.inCodeBlock ? line.match(this.rules.codeBlockStart) : null;
             if (codeStartMatch) {
                 closeParagraph(); closeAllBlock();
@@ -424,10 +427,8 @@
                 continue;
             }
 
-            // 2. TOC
             if (this.rules.toc.test(trimmed)) { closeAllBlock(); output.push('<!--TOC_PLACEHOLDER-->'); continue; }
             
-            // 3. Footnotes Definition
             var fnMatch = line.match(this.rules.footnoteDef);
             if (fnMatch) { 
                 closeAllBlock(); 
@@ -437,10 +438,8 @@
                 continue; 
             }
             
-            // 4. Empty Lines
             if (trimmed.length === 0) { closeAllBlock(); continue; }
             
-            // 5. Headers
             var headerMatch = line.match(/^(#{1,6})\s+(.*)/);
             if (headerMatch) { 
                 closeAllBlock(); 
@@ -455,10 +454,8 @@
                 continue; 
             }
 
-            // 6. Horizontal Rules
             if (trimmed.match(/^(\*{3,}|-{3,}|_{3,})$/) && !this.rules.tableSeparator.test(trimmed)) { closeAllBlock(); output.push('<hr>'); continue; }
 
-            // 7. Blockquotes & Callouts
             var quoteMatch = line.match(/^((?:>\s?)+)(.*)/);
             if (quoteMatch) {
                 closeParagraph(); closeList(); closeTable(); closeDefList();
@@ -485,7 +482,6 @@
                 continue;
             } else { closeQuotes(0); }
 
-            // 8. Lists
             var listMatch = line.match(this.rules.list);
             if (listMatch) {
                 closeParagraph(); closeTable(); closeDefList();
@@ -528,7 +524,6 @@
                 continue;
             } else { closeList(); }
 
-            // 9. Tables
             var isTableRow = this.rules.tableRow.test(trimmed);
             var nextLine = (i < lines.length - 1) ? lines[i+1].trim() : '';
             var nextIsSep = this.rules.tableSeparator.test(nextLine);
@@ -561,7 +556,6 @@
                 }
             } else { closeTable(); }
 
-            // 10. Definition Lists
             var isDd = this.rules.def.test(trimmed);
             var nextIsDd = this.rules.def.test(nextLine);
             if (isDd || nextIsDd) {
@@ -576,7 +570,6 @@
                 continue;
             } else { closeDefList(); }
             
-            // 11. Paragraphs
             if (!state.inParagraph) { 
                 var pParsed = parseAttributes(line);
                 output.push('<p' + pParsed.attrStr + '>'); 
@@ -616,11 +609,94 @@
             html = html.replace('<!--TOC_PLACEHOLDER-->', tocHtml);
         }
         
-        // Render Math First, Then Unescape standard chars
         html = this.renderMath(html);
         html = this.unmaskEscapes(html);
         return html;
     };
+
+    // --- Async Parsing (Inline Web Worker) ---
+    
+    // Initialize the worker using a Blob URL containing the factory code.
+    MDWOCAO.prototype._initWorker = function() {
+        if (this.worker) return;
+        
+        // We get the source of the factory function and execute it inside the worker context.
+        var factorySource = factory.toString();
+        // The worker needs to run the factory, get the Constructor, and set up the listener.
+        var blobContent = "'use strict'; (" + factorySource + ")(self);";
+        
+        try {
+            var blob = new Blob([blobContent], { type: 'application/javascript' });
+            var url = URL.createObjectURL(blob);
+            this.worker = new Worker(url);
+            
+            var self = this;
+            this.worker.onmessage = function(e) {
+                var data = e.data;
+                if (data && data.id && self.callbacks[data.id]) {
+                    self.callbacks[data.id](data.html);
+                    delete self.callbacks[data.id];
+                }
+            };
+        } catch (e) {
+            console.error("MDWOCAO: Failed to create Web Worker.", e);
+            this.worker = null;
+        }
+    };
+
+    /**
+     * Async Parse Method.
+     * Uses Web Worker if available, falls back to sync parse.
+     * @param {string} markdown
+     * @param {object} options
+     * @param {function} callback - function(html)
+     */
+    MDWOCAO.prototype.parseAsync = function(markdown, options, callback) {
+        // Fallback for missing Blob/Worker support or if user didn't provide callback
+        if (typeof window === 'undefined' || typeof Worker === 'undefined' || typeof Blob === 'undefined' || !callback) {
+            var result = this.parse(markdown, options);
+            if (callback) callback(result);
+            return;
+        }
+
+        if (!this.worker) {
+            this._initWorker();
+        }
+
+        if (this.worker) {
+            this.msgId++;
+            var currentId = 'msg_' + this.msgId;
+            this.callbacks[currentId] = callback;
+            this.worker.postMessage({
+                id: currentId,
+                content: markdown,
+                options: options || {}
+            });
+        } else {
+            // If worker initialization failed, fallback to sync
+            callback(this.parse(markdown, options));
+        }
+    };
+
+    MDWOCAO.prototype.terminate = function() {
+        if (this.worker) {
+            this.worker.terminate();
+            this.worker = null;
+        }
+    };
+
+    // --- Worker Internal Logic ---
+    // This block only runs when the factory is executed inside the Worker context.
+    if (typeof self !== 'undefined' && typeof self.postMessage === 'function' && typeof window === 'undefined') {
+        var workerParser = new MDWOCAO();
+        self.onmessage = function(e) {
+            var data = e.data;
+            if (data && data.content !== undefined) {
+                var html = workerParser.parse(data.content, data.options);
+                self.postMessage({ id: data.id, html: html });
+            }
+        };
+    }
 
     return MDWOCAO;
 }));
