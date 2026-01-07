@@ -1,111 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MDWOCAO.js Demo</title>
-    
-    <!-- 1. KaTeX Dependency (Required for Math) -->
+    <title>MDWOCAO.js Clean Demo</title>
+
+    <!-- 1. 引入 KaTeX (公式渲染) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
-    <!-- 2. MDWOCAO Core Library -->
-    <script src="mdwocao.js"></script>
+    <!-- 2. 引入核心样式 -->
+    <link rel="stylesheet" href="mdwocao.css">
+    <link rel="stylesheet" href="mdwocao-dark.css">
 
     <style>
-        /* Global Reset */
-        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; overflow: hidden; background: #fff; }
+        /* 页面布局容器 */
+        body { margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; font-family: sans-serif; background: #fff; }
+        header { padding: 10px 20px; border-bottom: 1px solid #eaecef; background: #f6f8fa; }
+        .container { display: flex; flex: 1; overflow: hidden; }
         
-        /* Layout */
-        .container { display: flex; height: 100vh; }
+        /* 编辑区 */
+        #editor { width: 50%; height: 100%; border: none; border-right: 1px solid #eaecef; padding: 20px; box-sizing: border-box; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 14px; resize: none; outline: none; background: #fcfcfc; color: #24292f; }
         
-        .editor-pane, .preview-pane {
-            flex: 1;
-            height: 100%;
-            overflow-y: hidden; /* Important for custom scroll handling */
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .editor-pane {
-            border-right: 1px solid #e1e4e8;
-            background-color: #1e1e1e; /* Dark theme for editor */
-        }
-
-        /* Header Bar */
-        .header {
-            padding: 10px 20px;
-            background: #2d2d2d;
-            border-bottom: 1px solid #333;
-            font-weight: 600;
-            color: #ccc;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .header span { opacity: 0.7; font-size: 12px; }
-
-        /* Textarea styling */
-        textarea {
-            flex: 1;
-            width: 100%;
-            border: none;
-            padding: 20px;
-            resize: none;
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            outline: none;
-            background: #1e1e1e;
-            color: #d4d4d4;
-            box-sizing: border-box;
-            overflow-y: auto;
-        }
-
-        /* Preview Area */
-        .preview-pane {
-            padding: 0;
-            background-color: #ffffff;
-        }
-        
-        #preview {
-            padding: 40px;
-            overflow-y: auto;
-            height: 100%;
-            box-sizing: border-box;
-        }
-
-        /* --- Demo Custom Classes (Testing Attribute Parsing) --- */
-        .demo-box {
-            border: 2px solid #e1e4e8;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            transition: all 0.3s;
-        }
-        .demo-box:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .text-center { text-align: center; }
-        .rainbow-text {
-            background: linear-gradient(to right, #ef5350, #f48fb1, #7e57c2, #2196f3, #26c6da, #43a047, #fdd835, #f4511e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: bold;
-        }
+        /* 预览区 */
+        #preview { width: 50%; height: 100%; padding: 20px 40px; box-sizing: border-box; overflow-y: auto; }
     </style>
 </head>
 <body>
 
+<header>
+    <h3>MDWOCAO.js Demo</h3>
+</header>
+
 <div class="container">
-    <!-- Left: Editor -->
-    <div class="editor-pane" id="editorWrapper">
-        <div class="header">
-            MARKDOWN INPUT
-            <span>MDWOCAO.js V24</span>
-        </div>
         <textarea id="editor" spellcheck="false">
 # 🚀 MDWOCAO.js V24 Showcase
 
@@ -261,84 +188,26 @@ And another one[^2].
 [^1]: Footnotes are placed at the bottom automatically.
 [^2]: They support **formatting** too.
         </textarea>
-    </div>
-
-    <!-- Right: Preview -->
-    <div class="preview-pane">
-        <div id="preview"></div>
-    </div>
+    
+    <div id="preview" class="md-content"></div>
 </div>
 
+<script src="MDWOCAO.js"></script>
 <script>
-    // --- Elements ---
-    const editor = document.getElementById('editor');
-    const previewArea = document.getElementById('preview');
-    const editorWrapper = document.getElementById('editorWrapper');
-    const previewWrapper = document.querySelector('.preview-pane');
+    var parser = new MDWOCAO();
+    var editor = document.getElementById('editor');
+    var preview = document.getElementById('preview');
 
-    // --- Core Logic ---
-
-    /**
-     * Parse and Render Markdown
-     */
     function render() {
-        const text = editor.value;
-        const startTime = performance.now();
-        
-        // Call MDWOCAO
-        const html = MDWOCAO.parse(text);
-        
-        const endTime = performance.now();
-        previewArea.innerHTML = html;
-        
-        // Optional: Log render time for performance check
-        // console.log(`Rendered in ${(endTime - startTime).toFixed(2)}ms`);
+        preview.innerHTML = parser.parse(editor.value, {
+            openLinksInNewTab: true
+        });
     }
 
-    // Initial Render
+    var safeRender = MDWOCAO.debounce(render, 100);
+    editor.addEventListener('input', safeRender);
     render();
-
-    // Real-time Update
-    editor.addEventListener('input', render);
-
-
-    // --- Scroll Synchronization (Fixed Version) ---
-    
-    let isScrolling = false;
-    let activeSource = null; // 'editor' or 'preview'
-
-    // Detect Mouse Enter to determine active scroll source
-    // This prevents the "looping" scroll glitch
-    editor.addEventListener('mouseenter', () => { activeSource = 'editor'; });
-    previewArea.addEventListener('mouseenter', () => { activeSource = 'preview'; });
-
-    // Sync: Editor -> Preview
-    editor.addEventListener('scroll', (e) => {
-        if (activeSource !== 'editor') return;
-
-        // Calculate percentage
-        const percentage = editor.scrollTop / (editor.scrollHeight - editor.clientHeight);
-        
-        // Map to preview
-        // Note: previewArea is the scrollable div inside previewWrapper
-        // But in CSS, #preview has overflow-y:auto? No, let's check CSS.
-        // Wait, in CSS: .preview-pane has padding, #preview has overflow-y:auto.
-        // Actually, let's map to #preview's scroll.
-        
-        const targetScroll = (previewArea.scrollHeight - previewArea.clientHeight) * percentage;
-        previewArea.scrollTop = targetScroll;
-    });
-
-    // Sync: Preview -> Editor
-    previewArea.addEventListener('scroll', (e) => {
-        if (activeSource !== 'preview') return;
-
-        const percentage = previewArea.scrollTop / (previewArea.scrollHeight - previewArea.clientHeight);
-        const targetScroll = (editor.scrollHeight - editor.clientHeight) * percentage;
-        
-        editor.scrollTop = targetScroll;
-    });
-
 </script>
+
 </body>
 </html>
